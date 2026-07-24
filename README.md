@@ -77,7 +77,8 @@ The repository includes a scheduler workflow:
 
 It runs:
 
-- Every 15 minutes
+- Daytime: every 15 minutes (05:00-21:59 UTC)
+- Nighttime: every 30 minutes (22:00-04:59 UTC)
 - Manually from the Actions tab (`workflow_dispatch`)
 
 ### Setup steps
