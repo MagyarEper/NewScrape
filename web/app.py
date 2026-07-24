@@ -3,13 +3,14 @@ from pathlib import Path
 
 from flask import Flask, render_template, request
 from sqlalchemy import desc, func, or_
+from sqlalchemy.exc import ProgrammingError
 
 # Allow direct execution: python web/app.py
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from models.database import Session
-from models.models import Article
+from models.models import Article, ScrapeRun
 
 app = Flask(__name__)
 
@@ -28,8 +29,19 @@ def index():
     page = max(page, 1)
 
     session = Session()
+    last_scrape_run = None
 
     try:
+        try:
+            last_scrape_run = (
+                session.query(ScrapeRun)
+                .order_by(desc(ScrapeRun.ran_at), desc(ScrapeRun.id))
+                .first()
+            )
+        except ProgrammingError:
+            # Table may not exist before first scrape on a fresh database.
+            session.rollback()
+
         sources = [
             row[0]
             for row in session.query(Article.source)
@@ -81,6 +93,7 @@ def index():
         total_count=total_count,
         total_pages=total_pages,
         page_numbers=page_numbers,
+        last_scrape_run=last_scrape_run,
     )
 
 

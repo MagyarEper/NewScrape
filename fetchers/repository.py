@@ -9,6 +9,8 @@ class ArticleRepository:
         self.session = session
 
     def save_articles(self, articles):
+        inserted = 0
+        duplicates = 0
 
         for article in articles:
 
@@ -18,7 +20,14 @@ class ArticleRepository:
 
             try:
                 self.session.commit()
+                inserted += 1
 
             except IntegrityError:
                 # URL already exists
                 self.session.rollback()
+                duplicates += 1
+
+        return {
+            "inserted": inserted,
+            "duplicates": duplicates,
+        }

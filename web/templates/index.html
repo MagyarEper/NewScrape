@@ -18,6 +18,20 @@
         <p>{{ total_count }} talalat | oldalmeret: {{ per_page }}</p>
     </header>
 
+    <section class="last-update">
+        {% if last_scrape_run %}
+        <p>
+            Utolso frissites:
+            <strong>{{ last_scrape_run.ran_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</strong>
+            | uj: {{ last_scrape_run.inserted }}
+            | duplikalt: {{ last_scrape_run.duplicates }}
+            | osszes begyujtott: {{ last_scrape_run.total_fetched }}
+        </p>
+        {% else %}
+        <p>Utolso frissites: meg nem futott scrape ezen az adatbazison.</p>
+        {% endif %}
+    </section>
+
     <section class="controls">
         <form method="get" action="/" class="filter-form">
             <input

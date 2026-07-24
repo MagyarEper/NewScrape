@@ -8,6 +8,7 @@ if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from models.database import Session, create_database
+from models.models import ScrapeRun
 
 from fetchers.fourfourfour import FourFourFourFetcher
 from fetchers.hvg import HvgFetcher
@@ -65,8 +66,20 @@ def main():
     # Save them
     repo = ArticleRepository(session)
 
-    repo.save_articles(all_articles)
+    save_stats = repo.save_articles(all_articles)
 
+    run = ScrapeRun(
+        total_fetched=len(all_articles),
+        inserted=save_stats["inserted"],
+        duplicates=save_stats["duplicates"],
+    )
+    session.add(run)
+    session.commit()
+    session.close()
+
+    print(
+        f"Saved {save_stats['inserted']} new and skipped {save_stats['duplicates']} duplicate articles"
+    )
     print("Done!")
 
 

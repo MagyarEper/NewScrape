@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, DateTime, Text
+from sqlalchemy import String, DateTime, Text, Integer
 
 
 class Base(DeclarativeBase):
@@ -45,3 +47,17 @@ class Article(Base):
 
     # Full article text (None for now)
     content: Mapped[str | None] = mapped_column(Text())
+
+
+class ScrapeRun(Base):
+    """
+    Stores metadata about each scraper execution.
+    """
+
+    __tablename__ = "scrape_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ran_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    total_fetched: Mapped[int] = mapped_column(Integer)
+    inserted: Mapped[int] = mapped_column(Integer)
+    duplicates: Mapped[int] = mapped_column(Integer)
