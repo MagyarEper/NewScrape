@@ -74,13 +74,12 @@ body {
 
 .filter-form {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) 210px auto auto;
+    grid-template-columns: minmax(220px, 1fr) 210px auto;
     gap: 0.6rem;
 }
 
 .filter-form input,
 .filter-form select,
-.filter-form button,
 .reset-link {
     border-radius: 0.75rem;
     border: 1px solid rgba(28, 29, 31, 0.14);
@@ -88,13 +87,6 @@ body {
     font: inherit;
     background: rgba(255, 255, 255, 0.7);
     color: var(--text);
-}
-
-.filter-form button {
-    cursor: pointer;
-    font-weight: 600;
-    background: #1f2937;
-    color: #fff;
 }
 
 .reset-link {

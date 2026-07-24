@@ -33,22 +33,23 @@
     </section>
 
     <section class="controls">
-        <form method="get" action="/" class="filter-form">
+        <form method="get" action="/" class="filter-form" id="filter-form">
             <input
                 type="text"
                 name="q"
                 value="{{ query_text }}"
                 placeholder="Kereses cimben vagy osszefoglaloban"
+                id="search-input"
+                autocomplete="off"
             >
 
-            <select name="source">
+            <select name="source" id="source-select">
                 <option value="">Minden forras</option>
                 {% for source in sources %}
                 <option value="{{ source }}" {% if source == source_filter %}selected{% endif %}>{{ source }}</option>
                 {% endfor %}
             </select>
 
-            <button type="submit">Szures</button>
             <a class="reset-link" href="/">Reset</a>
         </form>
     </section>
@@ -102,5 +103,45 @@
         {% endif %}
     </nav>
     {% endif %}
+
+    <script>
+        (function () {
+            const form = document.getElementById("filter-form");
+            const searchInput = document.getElementById("search-input");
+            const sourceSelect = document.getElementById("source-select");
+
+            if (!form || !searchInput || !sourceSelect) {
+                return;
+            }
+
+            let timer = null;
+
+            const submitFilters = function () {
+                const params = new URLSearchParams(new FormData(form));
+                params.delete("page");
+
+                const q = (params.get("q") || "").trim();
+                const source = (params.get("source") || "").trim();
+
+                if (!q) {
+                    params.delete("q");
+                }
+
+                if (!source) {
+                    params.delete("source");
+                }
+
+                const target = params.toString() ? "/?" + params.toString() : "/";
+                window.location.assign(target);
+            };
+
+            searchInput.addEventListener("input", function () {
+                window.clearTimeout(timer);
+                timer = window.setTimeout(submitFilters, 280);
+            });
+
+            sourceSelect.addEventListener("change", submitFilters);
+        })();
+    </script>
 </body>
 </html>
