@@ -69,6 +69,29 @@ This app is dynamic (Flask + PostgreSQL), so GitHub Pages is not suitable.
 - Build command: `pip install -r requirements.txt`
 - Start command: `gunicorn web.app:app`
 
+## Automate scraper (GitHub Actions)
+
+The repository includes a scheduler workflow:
+
+- [.github/workflows/scrape.yml](.github/workflows/scrape.yml)
+
+It runs:
+
+- Every hour at minute 15
+- Manually from the Actions tab (`workflow_dispatch`)
+
+### Setup steps
+
+1. Open GitHub repository settings.
+2. Go to Secrets and variables > Actions.
+3. Create a new repository secret:
+
+  - Name: `DATABASE_URL`
+  - Value: your Neon PostgreSQL connection string
+
+4. Go to Actions tab and run `Scheduled Scrape` once manually.
+5. Verify new rows in the app.
+
 ## Project layout
 
 - `main.py`: scraper entrypoint
