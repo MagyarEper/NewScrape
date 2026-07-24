@@ -1,7 +1,9 @@
 import sys
+import re
 from pathlib import Path
 
 from flask import Flask, render_template, request
+from markupsafe import Markup, escape
 from sqlalchemy import desc, func, or_
 from sqlalchemy.exc import ProgrammingError
 
@@ -13,6 +15,43 @@ from models.database import Session
 from models.models import Article, ScrapeRun
 
 app = Flask(__name__)
+
+
+TAG_RE = re.compile(r"<[^>]+>")
+
+
+def extract_search_terms(query_text):
+    terms = []
+
+    for term in query_text.split():
+        normalized = term.strip().lower()
+
+        if normalized and normalized not in terms:
+            terms.append(normalized)
+
+    return terms
+
+
+def strip_html(value):
+    return TAG_RE.sub("", value or "")
+
+
+def truncate_text(value, max_len=260):
+    if len(value) <= max_len:
+        return value
+
+    return value[: max_len - 3].rstrip() + "..."
+
+
+def highlight_text(value, terms):
+    escaped = str(escape(value or ""))
+
+    if not terms:
+        return Markup(escaped)
+
+    pattern = re.compile("(" + "|".join(re.escape(term) for term in terms) + ")", re.IGNORECASE)
+    highlighted = pattern.sub(r"<mark>\1</mark>", escaped)
+    return Markup(highlighted)
 
 
 @app.route("/")
@@ -27,6 +66,7 @@ def index():
         page = 1
 
     page = max(page, 1)
+    search_terms = extract_search_terms(query_text)
 
     session = Session()
     last_scrape_run = None
@@ -75,6 +115,11 @@ def index():
             .limit(per_page)
             .all()
         )
+
+        for article in articles:
+            summary_plain = truncate_text(strip_html(article.summary or ""))
+            article.display_title = highlight_text(article.title or "Untitled", search_terms)
+            article.display_summary = highlight_text(summary_plain, search_terms) if summary_plain else None
 
         page_start = max(page - 2, 1)
         page_end = min(page + 2, total_pages)

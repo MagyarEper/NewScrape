@@ -70,10 +70,10 @@
                     </span>
                 </div>
 
-                <h2><a href="{{ article.url }}" target="_blank" rel="noreferrer">{{ article.title }}</a></h2>
+                <h2><a href="{{ article.url }}" target="_blank" rel="noreferrer">{{ article.display_title }}</a></h2>
 
-                {% if article.summary %}
-                <p>{{ article.summary|striptags|truncate(260) }}</p>
+                {% if article.display_summary %}
+                <p>{{ article.display_summary }}</p>
                 {% endif %}
             </article>
             {% else %}
@@ -119,6 +119,8 @@
             }
 
             let activeRequest = null;
+            let inputTimer = null;
+            const INPUT_DELAY_MS = 180;
 
             const applyUrlToForm = function (url) {
                 const parsed = new URL(url, window.location.origin);
@@ -189,7 +191,8 @@
             };
 
             searchInput.addEventListener("input", function () {
-                submitFilters();
+                window.clearTimeout(inputTimer);
+                inputTimer = window.setTimeout(submitFilters, INPUT_DELAY_MS);
             });
 
             sourceSelect.addEventListener("change", submitFilters);

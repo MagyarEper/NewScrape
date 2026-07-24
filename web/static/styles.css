@@ -176,6 +176,13 @@ p {
     line-height: 1.5;
 }
 
+mark {
+    background: color-mix(in oklab, var(--source-accent) 30%, #fff59a);
+    color: #171717;
+    padding: 0 0.16rem;
+    border-radius: 0.25rem;
+}
+
 .empty {
     grid-column: 1 / -1;
     text-align: center;

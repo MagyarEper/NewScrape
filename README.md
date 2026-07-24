@@ -77,7 +77,7 @@ The repository includes a scheduler workflow:
 
 It runs:
 
-- Every hour at minute 15
+- Every 15 minutes
 - Manually from the Actions tab (`workflow_dispatch`)
 
 ### Setup steps
