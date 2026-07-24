@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newscrapeer Feed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <header class="topbar">
+        <h1>Newscrapeer</h1>
+        <p>{{ total_count }} talalat | oldalmeret: {{ per_page }}</p>
+    </header>
+
+    <section class="controls">
+        <form method="get" action="/" class="filter-form">
+            <input
+                type="text"
+                name="q"
+                value="{{ query_text }}"
+                placeholder="Kereses cimben vagy osszefoglaloban"
+            >
+
+            <select name="source">
+                <option value="">Minden forras</option>
+                {% for source in sources %}
+                <option value="{{ source }}" {% if source == source_filter %}selected{% endif %}>{{ source }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Szures</button>
+            <a class="reset-link" href="/">Reset</a>
+        </form>
+    </section>
+
+    <main class="grid">
+        {% for article in articles %}
+        {% set source_class = article.source|lower|replace('.', '')|replace(' ', '-') %}
+        <article class="card source-{{ source_class }}">
+            <div class="meta">
+                <span class="source">{{ article.source }}</span>
+                <span class="date">
+                    {% if article.published %}
+                        {{ article.published.strftime('%Y-%m-%d %H:%M') }}
+                    {% else %}
+                        no date
+                    {% endif %}
+                </span>
+            </div>
+
+            <h2><a href="{{ article.url }}" target="_blank" rel="noreferrer">{{ article.title }}</a></h2>
+
+            {% if article.summary %}
+            <p>{{ article.summary|striptags|truncate(260) }}</p>
+            {% endif %}
+        </article>
+        {% else %}
+        <section class="empty">
+            <h2>Nincs még cikk az adatbazisban</h2>
+            <p>Eloszor futtasd a scraper-t: <strong>python3 main.py</strong></p>
+        </section>
+        {% endfor %}
+    </main>
+
+    {% if total_pages > 1 %}
+    <nav class="pagination" aria-label="Lapozas">
+        {% if page > 1 %}
+        <a href="/?page={{ page - 1 }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}">Elozo</a>
+        {% endif %}
+
+        {% for p in page_numbers %}
+        <a
+            href="/?page={{ p }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}"
+            class="{% if p == page %}active{% endif %}"
+        >
+            {{ p }}
+        </a>
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="/?page={{ page + 1 }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}">Kovetkezo</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+</body>
+</html>
