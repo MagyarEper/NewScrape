@@ -3,3 +3,4 @@ httpx
 sqlalchemy
 psycopg2-binary
 flask
+gunicorn

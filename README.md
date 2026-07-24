@@ -51,6 +51,24 @@ python web/app.py
 
 Open in browser: http://127.0.0.1:5000
 
+## Deploy (Render + Neon)
+
+This app is dynamic (Flask + PostgreSQL), so GitHub Pages is not suitable.
+
+1. Create a free PostgreSQL database on Neon and copy its connection string.
+2. In Render, create a new Web Service from this repository.
+3. Render will detect `render.yaml` automatically.
+4. In Render environment variables, set:
+
+  - `DATABASE_URL` = your Neon PostgreSQL URL
+
+5. Deploy the service.
+
+### Manual Render settings (if you do not use render.yaml)
+
+- Build command: `pip install -r requirements.txt`
+- Start command: `gunicorn web.app:app`
+
 ## Project layout
 
 - `main.py`: scraper entrypoint
