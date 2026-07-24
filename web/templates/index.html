@@ -15,7 +15,7 @@
 
     <header class="topbar">
         <h1>Newscrapeer</h1>
-        <p>{{ total_count }} talalat | oldalmeret: {{ per_page }}</p>
+        <p id="results-count">{{ total_count }} talalat | oldalmeret: {{ per_page }}</p>
     </header>
 
     <section class="last-update">
@@ -54,67 +54,120 @@
         </form>
     </section>
 
-    <main class="grid">
-        {% for article in articles %}
-        {% set source_class = article.source|lower|replace('.', '')|replace(' ', '-') %}
-        <article class="card source-{{ source_class }}">
-            <div class="meta">
-                <span class="source">{{ article.source }}</span>
-                <span class="date">
-                    {% if article.published %}
-                        {{ article.published.strftime('%Y-%m-%d %H:%M') }}
-                    {% else %}
-                        no date
-                    {% endif %}
-                </span>
-            </div>
+    <div id="results-panel">
+        <main class="grid">
+            {% for article in articles %}
+            {% set source_class = article.source|lower|replace('.', '')|replace(' ', '-') %}
+            <article class="card source-{{ source_class }}">
+                <div class="meta">
+                    <span class="source">{{ article.source }}</span>
+                    <span class="date">
+                        {% if article.published %}
+                            {{ article.published.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            no date
+                        {% endif %}
+                    </span>
+                </div>
 
-            <h2><a href="{{ article.url }}" target="_blank" rel="noreferrer">{{ article.title }}</a></h2>
+                <h2><a href="{{ article.url }}" target="_blank" rel="noreferrer">{{ article.title }}</a></h2>
 
-            {% if article.summary %}
-            <p>{{ article.summary|striptags|truncate(260) }}</p>
+                {% if article.summary %}
+                <p>{{ article.summary|striptags|truncate(260) }}</p>
+                {% endif %}
+            </article>
+            {% else %}
+            <section class="empty">
+                <h2>Nincs még cikk az adatbazisban</h2>
+                <p>Eloszor futtasd a scraper-t: <strong>python3 main.py</strong></p>
+            </section>
+            {% endfor %}
+        </main>
+
+        {% if total_pages > 1 %}
+        <nav class="pagination" aria-label="Lapozas">
+            {% if page > 1 %}
+            <a href="/?page={{ page - 1 }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}">Elozo</a>
             {% endif %}
-        </article>
-        {% else %}
-        <section class="empty">
-            <h2>Nincs még cikk az adatbazisban</h2>
-            <p>Eloszor futtasd a scraper-t: <strong>python3 main.py</strong></p>
-        </section>
-        {% endfor %}
-    </main>
 
-    {% if total_pages > 1 %}
-    <nav class="pagination" aria-label="Lapozas">
-        {% if page > 1 %}
-        <a href="/?page={{ page - 1 }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}">Elozo</a>
+            {% for p in page_numbers %}
+            <a
+                href="/?page={{ p }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}"
+                class="{% if p == page %}active{% endif %}"
+            >
+                {{ p }}
+            </a>
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <a href="/?page={{ page + 1 }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}">Kovetkezo</a>
+            {% endif %}
+        </nav>
         {% endif %}
-
-        {% for p in page_numbers %}
-        <a
-            href="/?page={{ p }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}"
-            class="{% if p == page %}active{% endif %}"
-        >
-            {{ p }}
-        </a>
-        {% endfor %}
-
-        {% if page < total_pages %}
-        <a href="/?page={{ page + 1 }}&q={{ query_text|urlencode }}&source={{ source_filter|urlencode }}">Kovetkezo</a>
-        {% endif %}
-    </nav>
-    {% endif %}
+    </div>
 
     <script>
         (function () {
             const form = document.getElementById("filter-form");
             const searchInput = document.getElementById("search-input");
             const sourceSelect = document.getElementById("source-select");
+            const resultsPanel = document.getElementById("results-panel");
+            const resultsCount = document.getElementById("results-count");
 
-            if (!form || !searchInput || !sourceSelect) {
+            if (!form || !searchInput || !sourceSelect || !resultsPanel || !resultsCount) {
                 return;
             }
 
-            let timer = null;
+            let activeRequest = null;
+
+            const applyUrlToForm = function (url) {
+                const parsed = new URL(url, window.location.origin);
+                searchInput.value = parsed.searchParams.get("q") || "";
+                sourceSelect.value = parsed.searchParams.get("source") || "";
+            };
+
+            const fetchAndRender = async function (target, pushState) {
+                if (activeRequest) {
+                    activeRequest.abort();
+                }
+
+                activeRequest = new AbortController();
+
+                let response;
+
+                try {
+                    response = await fetch(target, {
+                        signal: activeRequest.signal,
+                        headers: {
+                            "X-Requested-With": "NewscrapeerLiveSearch",
+                        },
+                    });
+                } catch (error) {
+                    return;
+                }
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const html = await response.text();
+                const doc = new DOMParser().parseFromString(html, "text/html");
+                const nextPanel = doc.getElementById("results-panel");
+                const nextCount = doc.getElementById("results-count");
+
+                if (!nextPanel || !nextCount) {
+                    return;
+                }
+
+                resultsPanel.innerHTML = nextPanel.innerHTML;
+                resultsCount.textContent = nextCount.textContent;
+
+                if (pushState) {
+                    window.history.pushState({}, "", target);
+                } else {
+                    window.history.replaceState({}, "", target);
+                }
+            };
 
             const submitFilters = function () {
                 const params = new URLSearchParams(new FormData(form));
@@ -132,15 +185,35 @@
                 }
 
                 const target = params.toString() ? "/?" + params.toString() : "/";
-                window.location.assign(target);
+                fetchAndRender(target, false);
             };
 
             searchInput.addEventListener("input", function () {
-                window.clearTimeout(timer);
-                timer = window.setTimeout(submitFilters, 280);
+                submitFilters();
             });
 
             sourceSelect.addEventListener("change", submitFilters);
+
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                submitFilters();
+            });
+
+            document.addEventListener("click", function (event) {
+                const link = event.target.closest(".pagination a");
+
+                if (!link) {
+                    return;
+                }
+
+                event.preventDefault();
+                fetchAndRender(link.getAttribute("href"), true);
+            });
+
+            window.addEventListener("popstate", function () {
+                applyUrlToForm(window.location.href);
+                fetchAndRender(window.location.pathname + window.location.search, false);
+            });
         })();
     </script>
 </body>
